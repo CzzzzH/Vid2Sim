@@ -1,0 +1,22 @@
+model_type: gs
+view_samples: 12
+floor_level: -0.7
+floor_axis: 2
+delta_t: 0.05
+particle_volume: 1
+rho: 1000
+penalty_weight: 1e5
+num_cubature_points: 500
+num_handles: 10
+refine_lbs_iters: 10000
+refine_lbs_samples: 1000
+refine_lbs_batch_size: 10
+refine_jacobian_batch_size: 200
+refine_jacobian_samples: 100
+optimization_iters: 300
+optimization_checkpoint_interval: 10
+simulation_newton_iters: 10
+simulation_start_step: 5 
+frame_steps: 15
+predict_steps: 23
+

@@ -1,0 +1,17 @@
+numpy==1.26.4
+transformers==4.47.0
+tqdm
+trimesh
+tyro
+OmegaConf
+plyfile
+torch_geometric
+wandb
+torchmetrics
+pyfvvdp
+scikit-image
+safetensors
+kiui
+rembg
+onnxruntime
+roma
