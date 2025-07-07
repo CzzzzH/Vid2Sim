@@ -11,7 +11,7 @@ Official Implementation for ***Vid2Sim: Generalizable, Video-based Reconstructio
 
 
 ## 🔔 Updates
-[07/07/2025]. We released our pipeline code, pre-trained model and the GSO testset
+[07/07/2025] We released our pipeline code, pre-trained model and the GSO testset
 
 
 
@@ -60,7 +60,7 @@ Following the steps in this section, you can run our whole pipeline to reconstru
 
    The **frames** will be generated at `outputs/bus`(left video is **ground-truth** and right video is **reconstruction**)
 
-   <img src="assets/bus_gt.gif" alt="bus_gt" style="zoom:100%;" /> <img src="assets/bus_recon.gif" alt="bus_recon" style="zoom:100%;" />
+   <img src="assets/bus_gt.gif" alt="bus_gt" style="zoom:60%;" /> <img src="assets/bus_recon.gif" alt="bus_recon" style="zoom:60%;" />
    
    
 
