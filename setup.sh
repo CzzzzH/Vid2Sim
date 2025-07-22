@@ -5,3 +5,4 @@ python -m pip install -r requirements.txt
 python -m pip install gs/submodules/simple-knn
 python -m pip install gs/submodules/diff-gaussian-rasterization
 python -m pip install git+https://github.com/jukgei/diff-gaussian-rasterization.git@b1e1cb83e27923579983a9ed19640c6031112b94
+python -m pip install git+https://github.com/EasternJournalist/utils3d.git@9a4eb15e4021b67b12c460c7057d642626897ec8

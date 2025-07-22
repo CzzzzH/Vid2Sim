@@ -1,9 +1,7 @@
 __pycache__
 dataset/GSO
+dataset/objaverse
+
 checkpoints/
 outputs/
 debug/
-
-# Will release soon!
-train_predictor.py
-dataset_toolkits/

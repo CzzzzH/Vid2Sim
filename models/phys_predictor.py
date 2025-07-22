@@ -5,7 +5,6 @@ import random
 
 from torch import nn
 from torch.utils.data import Dataset
-from torchvision.transforms.functional import pil_to_tensor
 from transformers import VideoMAEImageProcessor
 from PIL import Image  
 
@@ -13,41 +12,39 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SimulationDataset(Dataset):
 
-    def __init__(self, dataset_dir, data_name=None, res=224, frame_num=8, is_train=False):
+    def __init__(self, dataset_dir, data_name=None, res=224, frame_num=16, split='test'):
 
         self.dataset_dir = dataset_dir
         self.frame_num = frame_num
         self.res = res 
-        self.is_train = is_train
+        self.split = split
 
         self.image_processor = VideoMAEImageProcessor.from_pretrained("MCG-NJU/videomae-base")
         self.image_processor.do_resize = False
         self.image_processor.do_center_crop = False
         self.image_size = {"shortest_edge":res}
         
-        if is_train:
-            self.data = self.process_mesh_dataset()
-        else:  
+        if split in ['train', 'val']: # train/val with objaverse
+            self.data = self.process_mesh_dataset(split)
+        else: # test with GSO
             entry = {} 
             entry['frames'] = [f'{dataset_dir}/{data_name}/data/m_0_{i}.png' for i in range(frame_num)]  
             self.data = [entry]
     
-    def process_mesh_dataset(self):
+    def process_mesh_dataset(self, split):
         
-        json_path = f'{self.dataset_dir}/transforms_train.json'
-        with open(json_path, 'r') as f:
-            obj_data = json.load(f)
-        keys = list(obj_data.keys())
+        data_list_path = f'{self.dataset_dir}/objaverse_{split}_list.json' 
+        with open(data_list_path, 'r') as f:
+            data_list = json.load(f) 
 
         data = []
-        for obj_info in keys:
-            obj_id, idx = obj_info.split('_')
+        for data_info in data_list: 
             entry = {}
-            entry['yms'] = obj_data[obj_info]['yms']
-            entry['prs'] = obj_data[obj_info]['prs']
-            entry['lbs'] = f'{self.dataset_dir}/{obj_id}/models/model_base.pth'
-            entry['frames'] = [f'{self.dataset_dir}/{obj_id}/render/{idx}/{i:03d}.png' for i in range(self.frame_num)]
-            entry['view_idx'] = int(idx)
+            entry['yms'] = data_info['yms']
+            entry['prs'] = data_info['prs']
+            obj_id = data_info['obj_id']
+            entry['lbs'] = f'{self.dataset_dir}/outputs/{obj_id}/models/model_base.pth'
+            entry['frames'] = [f'{self.dataset_dir}/outputs/{obj_id}/renderings/{i:03d}.png' for i in range(self.frame_num)] 
             data.append(entry)
         return data
     
@@ -68,16 +65,13 @@ class SimulationDataset(Dataset):
             video_raw = [ self.to_white_background(Image.open(frame)).resize((self.res, self.res)) for frame in entry['frames'] ]
             video = self.image_processor(video_raw, return_tensors="pt")['pixel_values'][0]
             
-            if self.is_train: 
-                video_tensor = torch.stack([pil_to_tensor(frame) for frame in video_raw]) 
-                view_idx = torch.tensor(entry['view_idx']).int()
-                yms_gt = torch.tensor(entry['yms']).unsqueeze(0)
+            if self.split in ['train', 'val']:  
+                yms_gt = torch.log10(torch.tensor(entry['yms']).unsqueeze(0))
                 prs_gt = torch.tensor(entry['prs']).unsqueeze(0)
                 lbs_weight = torch.load(entry['lbs'], map_location='cpu')['net.18.weight']
                 lbs_bias = torch.load(entry['lbs'], map_location='cpu')['net.18.bias']
                 lbs_gt = torch.cat([lbs_weight.view(-1), lbs_bias.view(-1)])
-                data = {'video': video, 'video_tensor': video_tensor, 'yms_gt': yms_gt, 'prs_gt': prs_gt, 
-                    'lbs_gt': lbs_gt, 'view_idx': view_idx} 
+                data = {'video': video, 'yms_gt': yms_gt, 'prs_gt': prs_gt, 'lbs_gt': lbs_gt} 
             else:
                 data = {'video': video}
 
@@ -85,7 +79,7 @@ class SimulationDataset(Dataset):
 
         except Exception as e:
             print(e)
-            if self.is_train:
+            if self.split in ['train', 'val']:
                 return self.__getitem__(random.randint(0, len(self.data) - 1))
 
 class RegressionHead(nn.Module):

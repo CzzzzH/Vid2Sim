@@ -1,5 +1,7 @@
 numpy==1.26.4
 transformers==4.47.0
+huggingface_hub==0.25.1
+bpy==4.0.0
 tqdm
 trimesh
 tyro
@@ -15,3 +17,11 @@ kiui
 rembg
 onnxruntime
 roma
+pillow 
+imageio 
+imageio-ffmpeg 
+easydict 
+opencv-python-headless 
+pandas 
+open3d 
+objaverse

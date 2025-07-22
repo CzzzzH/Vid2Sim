@@ -11,12 +11,16 @@ Official Implementation for ***Vid2Sim: Generalizable, Video-based Reconstructio
 
 
 ## 🔔 Updates
+[07/22/2025] We released the training code and scripts to generate training data from TRELLIS
+
 [07/07/2025] We released our pipeline code, pre-trained model and the GSO testset
 
 
 
 ## 🚧 TODO List 
-- [ ] Release the training dataset and related scripts
+- [ ] Release our real-world dataset
+
+- [x] Release the training code and the scripts to generate training data from TRELLIS
 
 - [x] Release the pipeline code and pre-trained model
 
@@ -33,7 +37,7 @@ Following the steps in this section, you can run our whole pipeline to reconstru
    bash setup.sh
    ```
 
-   Note that if you want to use different torch or cudatoolkit version, please also install the compatible version of [kaolin](https://github.com/NVIDIAGameWorks/kaolin)
+   **Note:** If you need to use different torch or cudatoolkit version (for correctly building other libraries), please also install the compatible version of [kaolin](https://github.com/NVIDIAGameWorks/kaolin) and [torch-cluster](https://github.com/rusty1s/pytorch_cluster)
 
 2. Download the [test dataset](https://drive.google.com/file/d/1VOCkvOLDFmJW0Ma6tqwaXW6vSRxhxe49/view?usp=sharing) and [checkpoints](https://drive.google.com/file/d/1_djvSuoLUXjewOBY77W7bGCt2Nywhk3C/view?usp=sharing) (including pre-trained models and LBS template network), unzip and put them into `dataset` and `checkpoints`. The folder structure should be
 
@@ -60,7 +64,7 @@ Following the steps in this section, you can run our whole pipeline to reconstru
 
    The **frames** will be generated at `outputs/bus`(left video is **ground-truth** and right video is **reconstruction**)
 
-   <img src="assets/bus.gif" alt="bus_gt" style="zoom:100%;" />
+   <img src="assets/bus_gt.gif" alt="bus_gt" style="zoom:60%;" /> <img src="assets/bus_recon.gif" alt="bus_recon" style="zoom:60%;" />
    
    
 
@@ -68,11 +72,53 @@ Following the steps in this section, you can run our whole pipeline to reconstru
 
 Our feed-forward predictor was trained on **50k** simulated animations using high-quality objects from the Objaverse dataset. 
 
-Due to policy restrictions, we are not able to release **the originals objaverse object IDs** we used for our model. Nevertheless, [TRELLIS](https://github.com/microsoft/TRELLIS) provides filtered high-quality Objaverse object list which can be used as a good subtitution.
+Due to policy restrictions, we are not able to release **the originals objaverse object IDs** we used for our model. Nevertheless, [TRELLIS](https://github.com/microsoft/TRELLIS) provides filtered high-quality Objaverse object list which can be used as a good subtitution. Here we provide a **step-by-step** tutorial for creating the training dataset using [TRELLIS](https://github.com/microsoft/TRELLIS) data
 
-We will provide a **step-by-step** tutorial for creating the training dataset using [TRELLIS](https://github.com/microsoft/TRELLIS) data list & training the feed-forward predictor (including related scripts) in this section soon! We will also provide the rendered data for direct download later.
+1. Download the objaverse sketchfab dataset (see [here](https://github.com/microsoft/TRELLIS/blob/main/DATASET.md) for more detail about the TRELLIS dataset)
 
+   ``` bash
+   python dataset_toolkits/build_metadata.py ObjaverseXL --source sketchfab --output_dir dataset/objaverse
+   python dataset_toolkits/download.py ObjaverseXL --output_dir dataset/objaverse
+   ```
 
+2. Process the data list and simulate animations with **random** physical parameters
+
+   ```bash
+   python dataset_toolkits/process_objaverse_dataset.py --task process
+   python dataset_toolkits/process_objaverse_dataset.py --task simulate --start_idx 0 --end_idx 1 # Only simulate 1 object as an example
+   ```
+
+3. Render the animation (if it fails to render a large amount of renderings, you can write another script to run this script multiple times)
+
+   ```bash
+   python dataset_toolkits/render_objaverse_dataset.py --start_idx 0 --end_idx 1 # Only render 1 object as an example
+   ```
+
+   After generation, the objaverse dataset structure should be like
+
+   ```bash
+   Vid2Sim
+   |-- dataset
+       |-- objaverse
+       	|-- ...
+       	|-- outputs
+       		|-- ...
+       		|-- 0a81d18db3c947fbbdc8d60edd1ef323
+                   |--meshes	
+                   |--models
+                   |--renderings
+                   |--gt_phys_params.yaml
+                   └--mesh.glb
+   ```
+
+4. Train the feed-forward predictor with rendered animations (you are also recommended to use **224x224** resolution for training since it's much faster to train and performs good)
+
+   ```bash
+   python train_preprocessing.py
+   python train_predictor.py
+   ```
+
+   
 
 ## 🍀 Acknowledgement
 

@@ -122,9 +122,15 @@ class LBSSimulator():
         if skip_lbs and os.path.exists(lbs_path):
             self.lbs_model.load_state_dict(torch.load(lbs_path))
         else: 
-            self.lbs_model_optimizer = torch.optim.Adam([{'params': self.lbs_model.parameters(), 'lr': 1e-3}])         
+
+            if self.produce_data: 
+                self.lbs_model_optimizer = torch.optim.Adam(
+                    [{'params': list(self.lbs_model.net[-1].parameters()), 'lr': 1e-3}]
+                )
+            else:
+                self.lbs_model_optimizer = torch.optim.Adam([{'params': self.lbs_model.parameters(), 'lr': 1e-3}])         
+            
             self.lbs_model_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.lbs_model_optimizer, T_max=self.refine_lbs_iters, eta_min=0)
-        
             train_step_lbs_fn = partial(train_step_lbs, model=self.lbs_model, normalized_pts=self.points,
                 batch_size=self.refine_lbs_batch_size, num_handles=self.num_handles, appx_vol=self.particle_volume, 
                 yms=self.point_wise_yms, prs=self.point_wise_prs, num_samples=self.refine_lbs_samples, 
@@ -145,29 +151,30 @@ class LBSSimulator():
             torch.save(self.lbs_model.state_dict(), lbs_path)
         
         # Train Jacobian Model (data-free training)
-        jacobian_path = f'{self.output_dir}/{self.data_name}/models/jmodel_{self.tag}.pth'
-        if skip_jacobian and os.path.exists(jacobian_path):
-            self.jacobian_model.load_state_dict(torch.load(jacobian_path))
-        else: 
-            self.jacobian_model_optimizer = torch.optim.AdamW(self.jacobian_model.parameters(), lr=1e-3, betas=(0.9, 0.98))
-            self.jacobian_model_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.jacobian_model_optimizer,
-                T_max=self.refine_lbs_iters, eta_min=0)
-            train_step_jacobian_fn = partial(train_step_jacobian, model=self.lbs_model, j_model=self.jacobian_model,
-                normalized_pts=self.points, batch_size=self.refine_jacobian_batch_size, num_handles=self.num_handles+1,
-                num_samples=self.refine_jacobian_samples)
-            
-            self.jacobian_model.train()
-            pbar = tqdm(range(self.refine_lbs_iters))
-            for i in pbar:
-                loss = train_step_jacobian_fn()
-                self.jacobian_model_optimizer.zero_grad()
-                loss.backward()
-                self.jacobian_model_optimizer.step()
-                self.jacobian_model_scheduler.step()
-                if i % 50 == 0:
-                    pbar.set_description(f'loss: {loss.item()}')
-                    pbar.set_postfix({'lr': self.jacobian_model_optimizer.param_groups[0]['lr']})
-            torch.save(self.jacobian_model.state_dict(), jacobian_path)
+        if not self.produce_data:
+            jacobian_path = f'{self.output_dir}/{self.data_name}/models/jmodel_{self.tag}.pth'
+            if skip_jacobian and os.path.exists(jacobian_path):
+                self.jacobian_model.load_state_dict(torch.load(jacobian_path))
+            else: 
+                self.jacobian_model_optimizer = torch.optim.AdamW(self.jacobian_model.parameters(), lr=1e-3, betas=(0.9, 0.98))
+                self.jacobian_model_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.jacobian_model_optimizer,
+                    T_max=self.refine_lbs_iters, eta_min=0)
+                train_step_jacobian_fn = partial(train_step_jacobian, model=self.lbs_model, j_model=self.jacobian_model,
+                    normalized_pts=self.points, batch_size=self.refine_jacobian_batch_size, num_handles=self.num_handles+1,
+                    num_samples=self.refine_jacobian_samples)
+                
+                self.jacobian_model.train()
+                pbar = tqdm(range(self.refine_lbs_iters))
+                for i in pbar:
+                    loss = train_step_jacobian_fn()
+                    self.jacobian_model_optimizer.zero_grad()
+                    loss.backward()
+                    self.jacobian_model_optimizer.step()
+                    self.jacobian_model_scheduler.step()
+                    if i % 50 == 0:
+                        pbar.set_description(f'loss: {loss.item()}')
+                        pbar.set_postfix({'lr': self.jacobian_model_optimizer.param_groups[0]['lr']})
+                torch.save(self.jacobian_model.state_dict(), jacobian_path)
 
         if self.optimization or self.tag == 'best':
             self.use_neural_jacobian = True
