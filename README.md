@@ -11,20 +11,13 @@ Official Implementation for ***Vid2Sim: Generalizable, Video-based Reconstructio
 
 
 ## 🔔 Updates
+[10/01/2026] We released our real-world dataset
+
 [07/22/2025] We released the training code and scripts to generate training data from TRELLIS
 
 [07/07/2025] We released our pipeline code, pre-trained model and the GSO testset
 
 
-
-## 🚧 TODO List 
-- [ ] Release our real-world dataset
-
-- [x] Release the training code and the scripts to generate training data from TRELLIS
-
-- [x] Release the pipeline code and pre-trained model
-
-  
 
 ## 🌟 Quick Start
 Following the steps in this section, you can run our whole pipeline to reconstruct the test videos simulated from [GSO](https://app.gazebosim.org/GoogleResearch/fuel/collections/Scanned%20Objects%20by%20Google%20Research) dataset.  
@@ -67,6 +60,27 @@ Following the steps in this section, you can run our whole pipeline to reconstru
    <img src="assets/bus.gif" alt="bus_gt" style="zoom:100%;" />
    
    
+
+## 📷 Real-world Dataset
+
+We also release the real-world dataset used in our paper, which contains multi-view videos of three objects (**orange**, **bird** and **cup**) dropped onto the floor, captured by 4 calibrated and synchronized cameras surrounding the scene.
+
+Download the [real-world dataset](https://drive.google.com/file/d/1nlUeF-9q1AgDzrioRBSlGro_mhUDikeL/view?usp=sharing) and unzip it into `dataset/real_world`. Each case follows the same format as the GSO test set. The folder structure should be
+
+```bash
+Vid2Sim
+|-- dataset
+    └-- real_world
+        |-- orange
+        |-- bird
+        |-- cup
+        |-- full_res  # (optional) the same videos at the original 4096x3000 resolution
+        └-- extras    # (optional) registered static 3D Gaussians used in our paper
+```
+
+Please refer to `dataset/real_world/README.md` for more details about the capture setup, camera calibration and file formats.
+
+
 
 ## 🔥 Train the feed-forward predictor with Objaverse data
 
